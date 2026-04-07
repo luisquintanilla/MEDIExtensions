@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MEDIExtensions.Onnx/MEDIExtensions.Onnx.csproj" />
+    <Project Path="src/MEDIExtensions/MEDIExtensions.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MEDIExtensions.Tests/MEDIExtensions.Tests.csproj" />
+  </Folder>
+</Solution>
