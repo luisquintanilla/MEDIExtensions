@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\MEDIExtensions\MEDIExtensions.csproj" />
+    <ProjectReference Include="..\..\src\MEDIExtensions.Onnx\MEDIExtensions.Onnx.csproj" />
   </ItemGroup>
 
   <ItemGroup>
