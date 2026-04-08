@@ -28,7 +28,7 @@ MEDIExtensions.Retrieval                    ← NEW (retrieval)
 | Package | Description |
 |---------|-------------|
 | **MEDIExtensions** | All retrieval + ingestion processors. Single dependency: MEDI (MEAI + VectorData transitive). |
-| **MEDIExtensions.Onnx** | ONNX cross-encoder reranker (planned). |
+| **MEDIExtensions.Onnx** | ONNX cross-encoder reranker — local inference with ms-marco-MiniLM, BGE, and custom models. |
 
 ## Retrieval Components
 
@@ -79,8 +79,40 @@ MEDI `IngestionChunkProcessor<string>` implementations:
 
 ## Usage
 
+### Fluent Builder APIs (Recommended)
+
+The builder APIs compose pipelines via familiar `IServiceCollection` extension methods:
+
 ```csharp
-// Register retrieval pipeline with processors
+// Retrieval pipeline — query expansion + tree search + reranking + quality gate
+builder.Services.AddRetrievalPipeline()
+    .UseQueryExpansion(o => o.VariantCount = 5)
+    .UseTreeSearch()
+    .UseLlmReranking(o => o.MaxResults = 10)
+    .UseCrag();
+
+// Ingestion pipeline — enrichment + RAPTOR tree indexing
+builder.Services.AddIngestionPipeline<string>()
+    .UseEntityExtraction()
+    .UseTopicClassification(o => o.Taxonomy = ["web", "data", "security"])
+    .UseHypotheticalQueries(o => o.QuestionsPerChunk = 3)
+    .UseTreeIndex();
+```
+
+Every `.UseX()` is optional, has per-processor `Action<TOptions>` configuration, and chains in execution order — the same pattern as `AddChatClient().UseFunctionInvocation()`.
+
+Generic escape hatches for custom processors:
+
+```csharp
+builder.Services.AddRetrievalPipeline()
+    .UseQueryProcessor<MyCustomExpander>()
+    .UseResultProcessor<MyCustomReranker>();
+```
+
+### Manual Registration
+
+```csharp
+// Register retrieval pipeline with processors directly
 builder.Services.AddSingleton(sp =>
 {
     var chatClient = sp.GetRequiredService<IChatClient>();
@@ -92,24 +124,6 @@ builder.Services.AddSingleton(sp =>
 
     return pipeline;
 });
-
-// Use in search
-var results = await pipeline.RetrieveAsync(
-    vectorCollection, query, topK: 5,
-    contentSelector: chunk => chunk.Text);
-```
-
-```csharp
-// Add ingestion enrichers to MEDI pipeline
-var pipeline = new IngestionPipeline<string>(reader, chunker, writer)
-{
-    ChunkProcessors =
-    {
-        new ContextualChunkEnricher(chatClient),
-        new EntityExtractionProcessor(chatClient),
-        new TopicClassificationProcessor(chatClient, ["web", "data", "security"]),
-    }
-};
 ```
 
 ## Dependencies
@@ -122,12 +136,26 @@ Single direct dependency:
 
 MEAI (`IChatClient`, `IEmbeddingGenerator`) and VectorData (`VectorStoreCollection`) come transitively.
 
+## Test Coverage
+
+89 unit tests across 16 test files covering all processors, orchestrators, and ONNX inference:
+
+| Category | Tests | Coverage |
+|----------|-------|----------|
+| Retrieval processors | 8 test classes | AdaptiveRouter, MultiQueryExpander, HyDE, TreeSearch, LlmReranker, CRAG |
+| Ingestion processors | 4 test classes | EntityExtraction, TopicClassification, HypotheticalQueries, TreeIndex |
+| ONNX reranker | 2 test classes | CrossEncoder scoring, options validation |
+| Generation orchestrators | 2 test classes | SelfRAG flow, SpeculativeRAG parallel drafting |
+
+All tests use mocked `IChatClient` and `VectorStoreCollection` — no external services required.
+
 ## Target Frameworks
 
 `net9.0` and `net10.0`
 
 ## Related
 
-- [advanced-rag](../advanced-rag/) — Reference application showing full integration
+- [advanced-rag](https://github.com/luisquintanilla/advanced-rag) — Reference application showing full integration
 - [medi-advanced-rag-investigation](../medi-advanced-rag-investigation/) — Research (28 docs, 22 samples) that produced these implementations
 - [dotnet/extensions](https://github.com/dotnet/extensions) — Upstream MEDI / MEAI
+- [dotnet/extensions fork](https://github.com/luisquintanilla/extensions/tree/feature/retrieval-abstractions) — Retrieval pipeline abstractions
