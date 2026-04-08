@@ -1,4 +1,5 @@
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.DataIngestion;
 
 namespace MEDIExtensions.Retrieval;
 
@@ -16,14 +17,14 @@ public class HydeQueryTransformer : RetrievalQueryProcessor
         _chatClient = chatClient ?? throw new ArgumentNullException(nameof(chatClient));
     }
 
-    public override async Task<RetrievalQuery> ProcessQueryAsync(
+    public override async Task<RetrievalQuery> ProcessAsync(
         RetrievalQuery query, CancellationToken cancellationToken = default)
     {
         var prompt = $"""
             Write a short, factual paragraph (3-4 sentences) that would directly answer this question.
             Write as if you are a documentation page. Do NOT include any preamble or explanation.
 
-            Question: {query.Original}
+            Question: {query.Text}
             """;
 
         var options = new ChatOptions

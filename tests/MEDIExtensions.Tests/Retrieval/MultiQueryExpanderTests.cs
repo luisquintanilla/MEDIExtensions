@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DataIngestion;
 using MEDIExtensions.Retrieval;
 using MEDIExtensions.Tests.Utils;
 
@@ -12,28 +13,28 @@ public class MultiQueryExpanderTests
     }
 
     [Fact]
-    public async Task ProcessQueryAsync_AddsVariantsAfterOriginal()
+    public async Task ProcessAsync_AddsVariantsAfterOriginal()
     {
         using var client = TestChatClient.WithJsonResponse(
             """{"variants": ["how to configure RAG", "RAG pipeline setup guide", "setting up retrieval augmented generation"]}""");
         var expander = new MultiQueryExpander(client);
         var query = new RetrievalQuery("how to set up RAG");
 
-        var output = await expander.ProcessQueryAsync(query);
+        var output = await expander.ProcessAsync(query);
 
         Assert.Equal("how to set up RAG", output.Variants[0]); // Original first
         Assert.True(output.Variants.Count >= 2); // At least original + 1 variant
     }
 
     [Fact]
-    public async Task ProcessQueryAsync_FiltersShortVariants()
+    public async Task ProcessAsync_FiltersShortVariants()
     {
         using var client = TestChatClient.WithJsonResponse(
             """{"variants": ["short", "", "this is a valid query variant about RAG"]}""");
         var expander = new MultiQueryExpander(client);
         var query = new RetrievalQuery("original query text");
 
-        var output = await expander.ProcessQueryAsync(query);
+        var output = await expander.ProcessAsync(query);
 
         // "short" (5 chars) and "" are filtered out, only the valid variant remains
         Assert.Equal(2, output.Variants.Count); // original + 1 valid
@@ -41,40 +42,40 @@ public class MultiQueryExpanderTests
     }
 
     [Fact]
-    public async Task ProcessQueryAsync_OriginalAlwaysFirst()
+    public async Task ProcessAsync_OriginalAlwaysFirst()
     {
         using var client = TestChatClient.WithJsonResponse(
             """{"variants": ["variant one that is long enough", "variant two that is long enough"]}""");
         var expander = new MultiQueryExpander(client);
         var query = new RetrievalQuery("my original question");
 
-        var output = await expander.ProcessQueryAsync(query);
+        var output = await expander.ProcessAsync(query);
 
         Assert.Equal("my original question", output.Variants[0]);
     }
 
     [Fact]
-    public async Task ProcessQueryAsync_LlmThrows_ReturnsOriginalOnly()
+    public async Task ProcessAsync_LlmThrows_ReturnsOriginalOnly()
     {
         using var client = TestChatClient.WithException(new InvalidOperationException("fail"));
         var expander = new MultiQueryExpander(client);
         var query = new RetrievalQuery("my question");
 
-        var output = await expander.ProcessQueryAsync(query);
+        var output = await expander.ProcessAsync(query);
 
         Assert.Single(output.Variants);
         Assert.Equal("my question", output.Variants[0]);
     }
 
     [Fact]
-    public async Task ProcessQueryAsync_LimitsToVariantCount()
+    public async Task ProcessAsync_LimitsToVariantCount()
     {
         using var client = TestChatClient.WithJsonResponse(
             """{"variants": ["variant one is long enough", "variant two is long enough", "variant three is long enough", "variant four is long enough", "variant five is long enough"]}""");
         var expander = new MultiQueryExpander(client) { VariantCount = 2 };
         var query = new RetrievalQuery("test");
 
-        var output = await expander.ProcessQueryAsync(query);
+        var output = await expander.ProcessAsync(query);
 
         // 1 original + at most 2 variants
         Assert.True(output.Variants.Count <= 3);

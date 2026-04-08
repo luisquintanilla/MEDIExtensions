@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.DataIngestion;
 
 namespace MEDIExtensions.Retrieval;
 
@@ -25,7 +26,7 @@ public class AdaptiveRouter : RetrievalQueryProcessor
         _chatClient = chatClient ?? throw new ArgumentNullException(nameof(chatClient));
     }
 
-    public override async Task<RetrievalQuery> ProcessQueryAsync(
+    public override async Task<RetrievalQuery> ProcessAsync(
         RetrievalQuery query, CancellationToken cancellationToken = default)
     {
         var prompt = $$"""
@@ -34,7 +35,7 @@ public class AdaptiveRouter : RetrievalQueryProcessor
             - "tree": broad/thematic question requiring multi-document overview or summary
             - "entity": question about a specific named entity (person, organization, technology)
 
-            Query: "{{query.Original}}"
+            Query: "{{query.Text}}"
 
             Return ONLY valid JSON: {"paradigm": "vector", "reasoning": "one sentence"}
             """;

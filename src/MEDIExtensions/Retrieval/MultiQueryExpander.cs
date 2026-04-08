@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.DataIngestion;
 
 namespace MEDIExtensions.Retrieval;
 
@@ -20,14 +21,14 @@ public class MultiQueryExpander : RetrievalQueryProcessor
         _chatClient = chatClient ?? throw new ArgumentNullException(nameof(chatClient));
     }
 
-    public override async Task<RetrievalQuery> ProcessQueryAsync(
+    public override async Task<RetrievalQuery> ProcessAsync(
         RetrievalQuery query, CancellationToken cancellationToken = default)
     {
         var prompt = $$"""
             Given this search query, generate exactly {{VariantCount}} alternative phrasings that capture
             different angles or terminology.
 
-            Query: {{query.Original}}
+            Query: {{query.Text}}
 
             Return ONLY valid JSON: {"variants": ["query1", "query2", "query3"]}
             """;
@@ -56,7 +57,7 @@ public class MultiQueryExpander : RetrievalQueryProcessor
         }
 
         // Always include the original query as the first variant
-        var allVariants = new List<string> { query.Original };
+        var allVariants = new List<string> { query.Text };
         allVariants.AddRange(variants);
         query.Variants = allVariants;
         return query;

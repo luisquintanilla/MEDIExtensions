@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.DataIngestion;
 
 namespace MEDIExtensions.Retrieval;
 
@@ -28,8 +29,8 @@ public class CragValidator : RetrievalResultProcessor
         _chatClient = chatClient ?? throw new ArgumentNullException(nameof(chatClient));
     }
 
-    public override async Task<RetrievalResults> ProcessResultsAsync(
-        RetrievalResults results, CancellationToken cancellationToken = default)
+    public override async Task<RetrievalResults> ProcessAsync(
+        RetrievalResults results, RetrievalQuery query, CancellationToken cancellationToken = default)
     {
         if (results.Chunks.Count == 0)
         {
@@ -53,7 +54,7 @@ public class CragValidator : RetrievalResultProcessor
             2 = tangentially related
             1 = completely different topic
 
-            Query: {{results.Query.Original}}
+            Query: {{query.Text}}
             Passages:
             {{passagesText}}
 

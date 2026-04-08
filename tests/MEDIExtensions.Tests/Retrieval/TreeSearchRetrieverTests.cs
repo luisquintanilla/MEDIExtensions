@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DataIngestion;
 using MEDIExtensions.Retrieval;
 
 namespace MEDIExtensions.Tests.Retrieval;
@@ -5,23 +6,23 @@ namespace MEDIExtensions.Tests.Retrieval;
 public class TreeSearchRetrieverTests
 {
     [Fact]
-    public async Task ProcessQueryAsync_SetsTreeTraversalMetadata()
+    public async Task ProcessAsync_SetsTreeTraversalMetadata()
     {
         var retriever = new TreeSearchRetriever();
         var query = new RetrievalQuery("broad question about architecture");
 
-        var output = await retriever.ProcessQueryAsync(query);
+        var output = await retriever.ProcessAsync(query);
 
         Assert.Equal("TreeTraversal", output.Metadata["search_paradigm"]);
     }
 
     [Fact]
-    public async Task ProcessQueryAsync_SetsResultsPerLevel()
+    public async Task ProcessAsync_SetsResultsPerLevel()
     {
         var retriever = new TreeSearchRetriever { ResultsPerLevel = 5 };
         var query = new RetrievalQuery("test");
 
-        var output = await retriever.ProcessQueryAsync(query);
+        var output = await retriever.ProcessAsync(query);
 
         Assert.Equal(5, output.Metadata["results_per_level"]);
     }

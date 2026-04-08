@@ -1,13 +1,13 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.DataIngestion;
 
 namespace MEDIExtensions.Retrieval;
 
 /// <summary>
 /// LLM-based reranker — asks the model to rank passages by relevance to the query.
-/// Implements both <see cref="RetrievalResultProcessor"/> (pipeline integration) and
-/// <see cref="ISearchReranker{TRecord}"/> (standalone reranking).
+/// Implements <see cref="RetrievalResultProcessor"/> for pipeline integration.
 /// </summary>
 public class LlmReranker : RetrievalResultProcessor
 {
@@ -27,15 +27,15 @@ public class LlmReranker : RetrievalResultProcessor
         _chatClient = chatClient ?? throw new ArgumentNullException(nameof(chatClient));
     }
 
-    public override async Task<RetrievalResults> ProcessResultsAsync(
-        RetrievalResults results, CancellationToken cancellationToken = default)
+    public override async Task<RetrievalResults> ProcessAsync(
+        RetrievalResults results, RetrievalQuery query, CancellationToken cancellationToken = default)
     {
         if (results.Chunks.Count <= 2)
             return results;
 
         var candidates = results.Chunks.Take(MaxCandidates).ToList();
         var rankedIndices = await GetRankedIndicesAsync(
-            results.Query.Original, candidates, cancellationToken);
+            query.Text, candidates, cancellationToken);
 
         var reranked = rankedIndices
             .Where(idx => idx >= 1 && idx <= candidates.Count)

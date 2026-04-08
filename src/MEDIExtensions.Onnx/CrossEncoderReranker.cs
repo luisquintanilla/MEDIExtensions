@@ -1,5 +1,5 @@
 using MEDIExtensions.Onnx.Internal;
-using MEDIExtensions.Retrieval;
+using Microsoft.Extensions.DataIngestion;
 using Microsoft.ML.Tokenizers;
 
 namespace MEDIExtensions.Onnx;
@@ -16,7 +16,7 @@ namespace MEDIExtensions.Onnx;
 /// Lazy initialization: the ONNX session and tokenizer are loaded on first use.
 /// Call <see cref="Dispose"/> to release native ONNX resources.
 /// </remarks>
-public class CrossEncoderReranker : RetrievalResultProcessor, ISearchReranker<RetrievalChunk>, IDisposable
+public class CrossEncoderReranker : RetrievalResultProcessor, ISearchReranker, IDisposable
 {
     private readonly CrossEncoderRerankerOptions _options;
     private readonly object _initLock = new();
@@ -36,26 +36,18 @@ public class CrossEncoderReranker : RetrievalResultProcessor, ISearchReranker<Re
     }
 
     /// <inheritdoc/>
-    public override async Task<RetrievalResults> ProcessResultsAsync(
-        RetrievalResults results, CancellationToken cancellationToken = default)
+    public override async Task<RetrievalResults> ProcessAsync(
+        RetrievalResults results, RetrievalQuery query, CancellationToken cancellationToken = default)
     {
         if (results.Chunks.Count <= 1)
             return results;
 
         var reranked = await RerankAsync(
-            results.Query.Original,
+            query.Text,
             results.Chunks.ToList(),
-            _options.MaxResults,
             cancellationToken);
 
-        results.Chunks = reranked
-            .Select(r =>
-            {
-                r.Record.Score = r.RelevanceScore;
-                return r.Record;
-            })
-            .ToList();
-
+        results.Chunks = reranked.Take(_options.MaxResults).ToList();
         results.Metadata["reranked"] = true;
         results.Metadata["reranker"] = "CrossEncoder";
         results.Metadata["reranked_count"] = results.Chunks.Count;
@@ -63,34 +55,32 @@ public class CrossEncoderReranker : RetrievalResultProcessor, ISearchReranker<Re
     }
 
     /// <inheritdoc/>
-    public Task<IReadOnlyList<RerankedResult<RetrievalChunk>>> RerankAsync(
+    public Task<IReadOnlyList<RetrievalChunk>> RerankAsync(
         string query,
-        IReadOnlyList<RetrievalChunk> results,
-        int topK = 5,
+        IReadOnlyList<RetrievalChunk> chunks,
         CancellationToken cancellationToken = default)
     {
-        if (results.Count == 0)
-            return Task.FromResult<IReadOnlyList<RerankedResult<RetrievalChunk>>>([]);
+        if (chunks.Count == 0)
+            return Task.FromResult<IReadOnlyList<RetrievalChunk>>([]);
 
         return Task.Run(() =>
         {
             EnsureInitialized();
             cancellationToken.ThrowIfCancellationRequested();
 
-            var documents = results.Select(r => r.Content).ToList();
+            var documents = chunks.Select(r => r.Content).ToList();
             var scores = ScoreDocuments(query, documents);
 
-            var reranked = results
-                .Select((chunk, i) => new RerankedResult<RetrievalChunk>
+            var reranked = chunks
+                .Select((chunk, i) =>
                 {
-                    Record = chunk,
-                    RelevanceScore = scores[i]
+                    chunk.Score = scores[i];
+                    return chunk;
                 })
-                .OrderByDescending(r => r.RelevanceScore)
-                .Take(topK)
+                .OrderByDescending(c => c.Score)
                 .ToList();
 
-            return (IReadOnlyList<RerankedResult<RetrievalChunk>>)reranked;
+            return (IReadOnlyList<RetrievalChunk>)reranked;
         }, cancellationToken);
     }
 

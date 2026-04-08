@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DataIngestion;
 using Microsoft.Extensions.VectorData;
 
 namespace MEDIExtensions.Retrieval;
@@ -15,11 +16,9 @@ public class TreeSearchRetriever : RetrievalQueryProcessor
     /// <summary>Number of results to retrieve at each level.</summary>
     public int ResultsPerLevel { get; init; } = 3;
 
-    public override Task<RetrievalQuery> ProcessQueryAsync(
+    public override Task<RetrievalQuery> ProcessAsync(
         RetrievalQuery query, CancellationToken cancellationToken = default)
     {
-        // TreeSearchRetriever doesn't transform the query — it's used as a search paradigm marker.
-        // The actual tree traversal is orchestrated by the pipeline or a custom search handler.
         query.Metadata["search_paradigm"] = "TreeTraversal";
         query.Metadata["results_per_level"] = ResultsPerLevel;
         return Task.FromResult(query);
@@ -42,7 +41,6 @@ public class TreeSearchRetriever : RetrievalQueryProcessor
     {
         var results = new List<RetrievalChunk>();
 
-        // Level 2: Find best root summaries (corpus overview)
         var allResults = new List<(TRecord Record, double Score, int Level)>();
         await foreach (var hit in collection.SearchAsync(query, top: topK * 3, cancellationToken: cancellationToken))
         {
@@ -53,25 +51,17 @@ public class TreeSearchRetriever : RetrievalQueryProcessor
             }
         }
 
-        // Group by level and take top-k from each
         var roots = allResults.Where(r => r.Level == 2).OrderByDescending(r => r.Score).Take(topK);
         var branches = allResults.Where(r => r.Level == 1).OrderByDescending(r => r.Score).Take(topK);
         var leaves = allResults.Where(r => r.Level == 0).OrderByDescending(r => r.Score).Take(topK);
 
-        // Build result with level metadata
         foreach (var item in roots.Concat(branches).Concat(leaves))
         {
-            results.Add(new RetrievalChunk
-            {
-                Content = contentSelector(item.Record),
-                Score = item.Score,
-                Record = new Dictionary<string, object?>
-                {
-                    ["level"] = item.Level,
-                    ["id"] = idSelector(item.Record),
-                    ["parent_id"] = parentIdSelector(item.Record)
-                }
-            });
+            var chunk = new RetrievalChunk(contentSelector(item.Record), item.Score);
+            chunk.Record["level"] = item.Level;
+            chunk.Record["id"] = idSelector(item.Record);
+            chunk.Record["parent_id"] = parentIdSelector(item.Record);
+            results.Add(chunk);
         }
 
         return results.OrderByDescending(r => r.Score).Take(topK).ToList();

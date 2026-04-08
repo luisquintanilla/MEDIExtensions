@@ -1,5 +1,5 @@
 using MEDIExtensions.Onnx;
-using MEDIExtensions.Retrieval;
+using Microsoft.Extensions.DataIngestion;
 
 namespace MEDIExtensions.Tests.Onnx;
 
@@ -69,10 +69,10 @@ public class CrossEncoderRerankerTests
         Assert.Equal(["logits", "output"], options.PreferredOutputNames);
     }
 
-    // --- ProcessResultsAsync Edge Cases ---
+    // --- ProcessAsync Edge Cases ---
 
     [Fact]
-    public async Task ProcessResultsAsync_EmptyChunks_ReturnsUnchanged()
+    public async Task ProcessAsync_EmptyChunks_ReturnsUnchanged()
     {
         var options = new CrossEncoderRerankerOptions
         {
@@ -81,18 +81,15 @@ public class CrossEncoderRerankerTests
         };
         var reranker = new CrossEncoderReranker(options);
 
-        var results = new RetrievalResults
-        {
-            Query = new RetrievalQuery("test query"),
-            Chunks = []
-        };
+        var query = new RetrievalQuery("test query");
+        var results = new RetrievalResults { Chunks = [] };
 
-        var output = await reranker.ProcessResultsAsync(results);
+        var output = await reranker.ProcessAsync(results, query);
         Assert.Empty(output.Chunks);
     }
 
     [Fact]
-    public async Task ProcessResultsAsync_SingleChunk_ReturnsUnchanged()
+    public async Task ProcessAsync_SingleChunk_ReturnsUnchanged()
     {
         var options = new CrossEncoderRerankerOptions
         {
@@ -101,14 +98,11 @@ public class CrossEncoderRerankerTests
         };
         var reranker = new CrossEncoderReranker(options);
 
-        var chunk = new RetrievalChunk { Content = "only chunk", Score = 0.8 };
-        var results = new RetrievalResults
-        {
-            Query = new RetrievalQuery("test query"),
-            Chunks = [chunk]
-        };
+        var chunk = new RetrievalChunk("only chunk", 0.8);
+        var query = new RetrievalQuery("test query");
+        var results = new RetrievalResults { Chunks = [chunk] };
 
-        var output = await reranker.ProcessResultsAsync(results);
+        var output = await reranker.ProcessAsync(results, query);
         Assert.Single(output.Chunks);
         Assert.Same(chunk, output.Chunks[0]);
     }
@@ -125,7 +119,7 @@ public class CrossEncoderRerankerTests
         };
         var reranker = new CrossEncoderReranker(options);
 
-        var result = await reranker.RerankAsync("query", [], topK: 5);
+        var result = await reranker.RerankAsync("query", []);
         Assert.Empty(result);
     }
 
@@ -154,7 +148,7 @@ public class CrossEncoderRerankerTests
         };
         var reranker = new CrossEncoderReranker(options);
 
-        Assert.IsAssignableFrom<ISearchReranker<RetrievalChunk>>(reranker);
+        Assert.IsAssignableFrom<ISearchReranker>(reranker);
     }
 
     [Fact]
@@ -169,21 +163,6 @@ public class CrossEncoderRerankerTests
 
         Assert.IsAssignableFrom<IDisposable>(reranker);
         reranker.Dispose(); // Should not throw
-    }
-
-    // --- Name ---
-
-    [Fact]
-    public void Name_DefaultsToTypeName()
-    {
-        var options = new CrossEncoderRerankerOptions
-        {
-            ModelPath = "model.onnx",
-            TokenizerPath = "tokenizer/"
-        };
-        var reranker = new CrossEncoderReranker(options);
-
-        Assert.Equal("CrossEncoderReranker", reranker.Name);
     }
 
     // --- Dispose ---
@@ -215,11 +194,11 @@ public class CrossEncoderRerankerTests
 
         var chunks = new List<RetrievalChunk>
         {
-            new() { Content = "a", Score = 0.5 },
-            new() { Content = "b", Score = 0.3 }
+            new("a", 0.5),
+            new("b", 0.3)
         };
 
         await Assert.ThrowsAsync<ObjectDisposedException>(
-            () => reranker.RerankAsync("query", chunks, topK: 2));
+            () => reranker.RerankAsync("query", chunks));
     }
 }

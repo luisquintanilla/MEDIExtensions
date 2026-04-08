@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DataIngestion;
 using MEDIExtensions.Retrieval;
 using MEDIExtensions.Tests.Utils;
 
