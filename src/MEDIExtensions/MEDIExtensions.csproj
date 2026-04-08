@@ -5,12 +5,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>MEDIExtensions</RootNamespace>
+    <Version>1.0.0-dev</Version>
     <Description>Community extensions for Microsoft.Extensions.DataIngestion — retrieval pipeline, reranking, quality gates, ingestion enrichers, and advanced RAG patterns.</Description>
     <PackageTags>RAG;retrieval;ingestion;reranking;MEDI;AI</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\extensions\src\Libraries\Microsoft.Extensions.DataIngestion.Abstractions\Microsoft.Extensions.DataIngestion.Abstractions.csproj" />
+    <PackageReference Include="Microsoft.Extensions.DataIngestion.Abstractions" Version="10.5.1-dev" />
   </ItemGroup>
 
   <ItemGroup>
