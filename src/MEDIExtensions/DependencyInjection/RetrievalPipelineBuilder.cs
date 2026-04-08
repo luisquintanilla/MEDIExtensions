@@ -15,6 +15,13 @@ public class RetrievalPipelineBuilder
 
     // -- Query Processors --
 
+    /// <summary>Adds a query processor resolved from DI via <see cref="ActivatorUtilities"/>.</summary>
+    public RetrievalPipelineBuilder UseQueryProcessor<T>() where T : RetrievalQueryProcessor
+    {
+        QueryProcessorFactories.Add(sp => ActivatorUtilities.CreateInstance<T>(sp));
+        return this;
+    }
+
     /// <summary>Adds adaptive query routing that classifies queries and selects the best search paradigm.</summary>
     public RetrievalPipelineBuilder UseAdaptiveRouting()
     {
@@ -62,6 +69,13 @@ public class RetrievalPipelineBuilder
     }
 
     // -- Result Processors --
+
+    /// <summary>Adds a result processor resolved from DI via <see cref="ActivatorUtilities"/>.</summary>
+    public RetrievalPipelineBuilder UseResultProcessor<T>() where T : RetrievalResultProcessor
+    {
+        ResultProcessorFactories.Add(sp => ActivatorUtilities.CreateInstance<T>(sp));
+        return this;
+    }
 
     /// <summary>Adds LLM-based reranking of search results.</summary>
     public RetrievalPipelineBuilder UseLlmReranking(Action<LlmRerankingOptions>? configure = null)
