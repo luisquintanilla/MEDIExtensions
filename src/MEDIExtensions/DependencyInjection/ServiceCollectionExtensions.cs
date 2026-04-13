@@ -1,6 +1,8 @@
 using Microsoft.Extensions.DataIngestion;
+using Microsoft.Extensions.DataRetrieval;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using RetrievalPipeline = Microsoft.Extensions.DataRetrieval.RetrievalPipeline;
 
 namespace MEDIExtensions.DependencyInjection;
 

@@ -1,5 +1,5 @@
 using MEDIExtensions.Onnx.Internal;
-using Microsoft.Extensions.DataIngestion;
+using Microsoft.Extensions.DataRetrieval;
 using Microsoft.ML.Tokenizers;
 
 namespace MEDIExtensions.Onnx;
@@ -16,7 +16,7 @@ namespace MEDIExtensions.Onnx;
 /// Lazy initialization: the ONNX session and tokenizer are loaded on first use.
 /// Call <see cref="Dispose"/> to release native ONNX resources.
 /// </remarks>
-public class CrossEncoderReranker : RetrievalResultProcessor, ISearchReranker, IDisposable
+public class CrossEncoderReranker : RetrievalResultProcessor, IReranker, IDisposable
 {
     private readonly CrossEncoderRerankerOptions _options;
     private readonly object _initLock = new();

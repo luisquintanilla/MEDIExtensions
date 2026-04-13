@@ -39,7 +39,7 @@ MEDIExtensions.Retrieval                    ← NEW (retrieval)
 | `RetrievalPipeline` | Core orchestrator with OTel `ActivitySource`. Query processors → vector search → result processors. |
 | `RetrievalQueryProcessor` | Abstract base for pre-search processing. |
 | `RetrievalResultProcessor` | Abstract base for post-search processing. |
-| `ISearchReranker` | Interface for reranking strategies. |
+| `IReranker` | Interface for reranking strategies. |
 | `RetrievalQuery` | Query data type with variants + metadata. |
 | `RetrievalResults` | Results + chunks data types. |
 

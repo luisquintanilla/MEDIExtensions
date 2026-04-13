@@ -1,5 +1,5 @@
 using Microsoft.Extensions.AI;
-using Microsoft.Extensions.DataIngestion;
+using Microsoft.Extensions.DataRetrieval;
 
 namespace MEDIExtensions.Retrieval;
 

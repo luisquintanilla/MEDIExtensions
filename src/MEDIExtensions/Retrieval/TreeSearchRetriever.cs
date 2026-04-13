@@ -1,4 +1,4 @@
-using Microsoft.Extensions.DataIngestion;
+using Microsoft.Extensions.DataRetrieval;
 using Microsoft.Extensions.VectorData;
 
 namespace MEDIExtensions.Retrieval;

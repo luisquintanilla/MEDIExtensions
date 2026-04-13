@@ -1,5 +1,5 @@
 using MEDIExtensions.Onnx;
-using Microsoft.Extensions.DataIngestion;
+using Microsoft.Extensions.DataRetrieval;
 
 namespace MEDIExtensions.Tests.Onnx;
 
@@ -139,7 +139,7 @@ public class CrossEncoderRerankerTests
     }
 
     [Fact]
-    public void ImplementsISearchReranker()
+    public void ImplementsIReranker()
     {
         var options = new CrossEncoderRerankerOptions
         {
@@ -148,7 +148,7 @@ public class CrossEncoderRerankerTests
         };
         var reranker = new CrossEncoderReranker(options);
 
-        Assert.IsAssignableFrom<ISearchReranker>(reranker);
+        Assert.IsAssignableFrom<IReranker>(reranker);
     }
 
     [Fact]
