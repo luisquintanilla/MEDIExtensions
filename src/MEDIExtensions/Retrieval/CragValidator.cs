@@ -24,6 +24,13 @@ public class CragValidator : RetrievalResultProcessor
     /// <summary>Maximum preview length per passage (characters).</summary>
     public int PreviewLength { get; init; } = 300;
 
+    /// <summary>
+    /// Token budget for the grading response. Reasoning models spend tokens thinking before
+    /// they emit output, so a small cap can be consumed entirely by reasoning and return an
+    /// empty body (FinishReason = length). Keep this high enough to leave room for the JSON.
+    /// </summary>
+    public int MaxGradingTokens { get; init; } = 2000;
+
     public CragValidator(IChatClient chatClient)
     {
         _chatClient = chatClient ?? throw new ArgumentNullException(nameof(chatClient));
@@ -63,7 +70,7 @@ public class CragValidator : RetrievalResultProcessor
 
         var options = new ChatOptions
         {
-            MaxOutputTokens = 200,
+            MaxOutputTokens = MaxGradingTokens,
             ResponseFormat = ChatResponseFormat.Json
         };
 
